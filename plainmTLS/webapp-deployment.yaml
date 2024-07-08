@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-deployment
+  namespace: test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapp
+  template:
+    metadata:
+      labels:
+        app: webapp
+    spec:
+      containers:
+      - name: webapp
+        image: your-docker-image  # Ensure this matches the image you built and pushed
+        ports:
+        - containerPort: 5000
+        volumeMounts:
+        - name: tls
+          mountPath: /etc/tls
+          readOnly: true
+        env:
+        - name: MONGO_URI
+          value: "mongodb://mongo.test.svc.cluster.local:27017"
+      volumes:
+      - name: tls
+        secret:
+          secretName: webapp-tls
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp-service
+  namespace: test
+spec:
+  selector:
+    app: webapp
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
+      nodePort: 30609  # Choose a port within the NodePort range (30000-32767)
+  type: NodePort
